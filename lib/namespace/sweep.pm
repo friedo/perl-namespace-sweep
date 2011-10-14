@@ -16,7 +16,6 @@ sub import {
     my $cleanee = exists $args{-cleanee} ? $args{-cleanee} : scalar caller;
 
     on_scope_end { 
-        my @clean;
         no strict 'refs';
         my $st = $cleanee . '::';
         my $ps = Package::Stash->new( $cleanee );
@@ -35,3 +34,5 @@ sub import {
 }
 
 1;
+
+
