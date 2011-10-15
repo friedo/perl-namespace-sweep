@@ -142,15 +142,21 @@ normally be caught. (For example, private helper subs in your module's class tha
 should not be called as methods.)
 
     package Foo;
-    use namespace::sweep -also => '_helper'          # sweep up single sub
-    use namespace::sweep -also => [qw/foo bar baz/]  # list of subs
-    use namespace::sweep -also => qr/^secret_/       # subs matching regex
+    use namespace::sweep -also => '_helper';          # sweep up single sub
+    use namespace::sweep -also => [qw/foo bar baz/];  # list of subs
+    use namespace::sweep -also => qr/^secret_/;       # subs matching regex
 
-You can also specify a subroutine reference which will receive the symbol name as its
-only argument. If the sub returns true, the symbol will be swept.
+You can also specify a subroutine reference which will receive the symbol name as
+C<$_>. If the sub returns true, the symbol will be swept.
 
     # sweep up those rude four-letter subs
-    use namespace::sweep -also => sub { return 1 if length $_[0] == 4 }
+    use namespace::sweep -also => sub { return 1 if length $_ == 4 }
+
+You can also combine these methods into an array reference:
+
+    use namespace::sweep -also => [ 'string', sub { 1 if /$pat/ and $_ !~ /$other/ }, qr/^foo_.+/ ];
+
+=back
 
 =head1 RATIONALE 
 
@@ -167,4 +173,30 @@ used to find e.g. methods from composed roles that should not be deleted.
 
 In most cases, namespace::sweep should work as a drop-in replacement for namespace::autoclean.
 Upon release, this pragma passes all of namespace::autoclean's tests, in addition to its own.
+
+=head1 CAVEATS
+
+This is an early release and there are bound to be a few hiccups along the way.
+
+=head1 ACKNOWLEDGEMENTS 
+
+Thanks Florian Ragwitz and Tomas Doran for writing and maintaining namespace::autoclean. 
+
+=head1 SEE ALSO
+
+L<namespace::autoclean>, L<namespace::clean>, L<overload>
+
+=head1 AUTHOR
+
+Mike Friedman <friedo@friedo.com>
+
+=head1 COPYRIGHT AND LICENSE 
+
+This software is copyright (c) 2011 by Mike Friedman.
+
+This is free software; you can redistribute it and/or modify it under the same terms as
+the Perl 5 programming language system itself.
+
+
+=cut
 
