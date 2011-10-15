@@ -8,10 +8,10 @@ use Test::More tests => 3;
 
 {
     package My::Cleaner;
-    use namespace::autoclean ();
+    use namespace::sweep ();
 
     sub import {
-        namespace::autoclean->import(
+        namespace::sweep->import(
             -cleanee => scalar(caller),
             -also => 'blast',
         );

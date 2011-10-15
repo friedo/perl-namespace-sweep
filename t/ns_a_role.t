@@ -19,7 +19,7 @@ BEGIN {
 {
     package Foo;
     use Moose::Role;
-    use namespace::autoclean;
+    use namespace::sweep;
 }
 
 # meta doesn't get cleaned, although it's not in get_method_list for roles

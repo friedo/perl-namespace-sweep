@@ -8,8 +8,8 @@ use Test::More tests => 3;
 
 {
     package Foo;
-    use namespace::autoclean -also => ['bar'];
-    use namespace::autoclean -also => 'moo';
+    use namespace::sweep -also => ['bar'];
+    use namespace::sweep -also => 'moo';
     sub bar {}
     sub moo {}
     sub baz {}

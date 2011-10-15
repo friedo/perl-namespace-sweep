@@ -9,8 +9,8 @@ use Test::More tests => 6;
 {
 
     package Foo;
-    use namespace::autoclean -also => qr/^_/;
-    use namespace::autoclean -also => sub { $_ =~ m{x} and $_ !~ m{y} };
+    use namespace::sweep -also => qr/^_/;
+    use namespace::sweep -also => sub { $_ =~ m{x} and $_ !~ m{y} };
     sub _hidden { }
     sub xsubs_are_bad { }
     sub ysubs_are_good { }
@@ -19,7 +19,7 @@ use Test::More tests => 6;
 {
 
     package Bar;
-    use namespace::autoclean -also =>
+    use namespace::sweep -also =>
       [ qr/^_/, sub { $_ =~ m{x} and $_ !~ m{y} } ];
     sub _hidden { }
     sub xsubs_are_bad { }
