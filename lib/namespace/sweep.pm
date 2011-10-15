@@ -52,7 +52,17 @@ sub import {
         my $st = $cleanee . '::';
         my $ps = Package::Stash->new( $cleanee );
 
-        my $sweep = sub { $ps->remove_symbol( '&' . $_[0] ) };
+        my $sweep = sub { 
+            # stolen from namespace::clean
+            my @symbols = map {
+                my $name = $_ . $_[0];
+                my $def = $ps->get_symbol( $name );
+                defined($def) ? [$name, $def] : ()
+            } '$', '@', '%', '';
+
+            $ps->remove_glob( $_[0] );
+            $ps->add_symbol( @$_ ) for @symbols;
+        };
 
         my %keep;
         if ( $cleanee->can( 'meta' ) ) { 
@@ -73,11 +83,8 @@ sub import {
             next if $pkg eq $cleanee;                       # defined in the cleanee pkg
             next if $pkg eq 'overload' and $name eq 'nil';  # magic overload method
 
-            print "$sym --> $pkg :: $name\n";
             $sweep->( $sym );
         } 
-
-        printf "scope end %s\n", $cleanee;
     };
 
 }
