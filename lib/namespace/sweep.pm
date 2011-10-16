@@ -68,8 +68,8 @@ sub import {
         if ( $cleanee->can( 'meta' ) ) { 
             # look for moose-ish composed methods
             my $meta = $cleanee->meta;
-            if ( blessed $meta && $meta->can( 'get_all_method_names' ) ) { 
-                %keep = map { $_ => 1 } $meta->get_all_method_names;
+            if ( blessed $meta && $meta->can( 'get_method_list' ) ) { 
+                %keep = map { $_ => 1 } $meta->get_method_list;
             }
         }
 
