@@ -65,19 +65,24 @@ sub import {
         };
 
         my %keep;
-        if ( $cleanee->can( 'meta' ) ) { 
-            # look for moose-ish composed methods
-            my $meta = $cleanee->meta;
-            if ( blessed $meta && $meta->can( 'get_method_list' ) ) { 
-                %keep = map { $_ => 1 } $meta->get_method_list;
-            }
+        if ( exists $INC{'Class/MOP.pm'} ) {
+
+            # If Class::MOP is already loaded, it doesn't hurt to ask it what
+            # it thinks the methods are -- this puts us at parity with
+            # autoclean
+
+            my $meta = Class::MOP::Class->initialize( $cleanee );
+            %keep = map { $_ => 1 } $meta->get_method_list;
         }
 
         foreach my $sym( keys %{ $st } ) { 
+
+            # skip right off the bat if we know it's a method already
+            next if exists $keep{$sym};
+
             $sweep->( $sym ) and next if $run_test->( $sym );
 
             next unless exists &{ $st . $sym };
-            next if $keep{$sym};
 
             my ( $pkg, $name ) = get_code_info \&{ $st . $sym };
             next if $pkg eq $cleanee;                       # defined in the cleanee pkg
