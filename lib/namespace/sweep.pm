@@ -15,7 +15,6 @@ use B::Hooks::EndOfScope   0.09 'on_scope_end';
 use Package::Stash         0.33;
 
 $namespace::sweep::AUTHORITY = 'cpan:FRIEDO';
-$namespace::sweep::VERSION   = 0.002;
 
 sub import { 
     my ( $class, %args ) = @_;
@@ -97,14 +96,6 @@ __END__
 =pod
 
 =encoding utf-8
-
-=head1 NAME
-
-namespace::sweep - Sweep up imported subs in your classes
-
-=head1 VERSION
-
-Version 0.002
 
 =head1 SYNOPSIS
 
