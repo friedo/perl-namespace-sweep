@@ -64,10 +64,15 @@ sub import {
         };
 
         my %keep;
-        my $class_of = UNIVERSAL::can('Class::MOP', 'can') && Class::MOP->can('class_of');
-        if ( $class_of ) { 
+        my $class_of_cm = UNIVERSAL::can('Class::MOP', 'can')  && 'Class::MOP'->can('class_of');
+        my $class_of_mu = UNIVERSAL::can('Mouse::Util', 'can') && 'Mouse::Util'->can('class_of');
+        if ( $class_of_cm or $class_of_mu ) { 
             # look for moose-ish composed methods
-            my $meta = $cleanee->$class_of;
+            my ($meta) =
+                grep { !!$_ }
+                map  { $cleanee->$_ }
+                grep { defined $_ }
+                ($class_of_cm, $class_of_mu);
             if ( blessed $meta && $meta->can( 'get_all_method_names' ) ) { 
                 %keep = map { $_ => 1 } $meta->get_all_method_names;
             }
