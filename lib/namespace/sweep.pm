@@ -64,9 +64,10 @@ sub import {
         };
 
         my %keep;
-        if ( $cleanee->can( 'meta' ) ) { 
+        my $class_of = UNIVERSAL::can('Class::MOP', 'can') && Class::MOP->can('class_of');
+        if ( $class_of ) { 
             # look for moose-ish composed methods
-            my $meta = $cleanee->meta;
+            my $meta = $cleanee->$class_of;
             if ( blessed $meta && $meta->can( 'get_all_method_names' ) ) { 
                 %keep = map { $_ => 1 } $meta->get_all_method_names;
             }
