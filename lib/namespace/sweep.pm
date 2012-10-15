@@ -196,17 +196,6 @@ Thanks to Toby Inkster for submitting some better code for finding C<meta> objec
 
 L<namespace::autoclean>, L<namespace::clean>, L<overload>
 
-=head1 AUTHOR
-
-Mike Friedman <friedo@friedo.com>
-
-=head1 COPYRIGHT AND LICENSE 
-
-This software is copyright (c) 2011 by Mike Friedman.
-
-This is free software; you can redistribute it and/or modify it under the same terms as
-the Perl 5 programming language system itself.
-
 
 =cut
 
