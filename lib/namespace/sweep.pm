@@ -190,6 +190,8 @@ This is an early release and there are bound to be a few hiccups along the way.
 
 Thanks Florian Ragwitz and Tomas Doran for writing and maintaining namespace::autoclean. 
 
+Thanks to Toby Inkster for submitting some better code for finding C<meta> objects.
+
 =head1 SEE ALSO
 
 L<namespace::autoclean>, L<namespace::clean>, L<overload>
