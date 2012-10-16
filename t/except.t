@@ -1,4 +1,4 @@
-use Test::More tests => 3;
+use Test::More tests => 4;
 
 BEGIN {
     package Local::Clean;
@@ -18,6 +18,12 @@ BEGIN {
     use namespace::sweep -except => [ qr{e} ];
 };
 
+BEGIN {
+    package Local::Conflicting;
+    sub foo { 1 };
+    use namespace::sweep -also => 'foo', -except => 'foo';
+};
+
 ok(
     !Local::Clean->can('blessed') && !Local::Clean->can('reftype'),
     'default'
@@ -31,4 +37,9 @@ ok(
 ok(
     Local::Filthy->can('blessed') && Local::Filthy->can('reftype'),
     '-except qr{regex}'
+);
+
+ok(
+    Local::Conflicting->can('foo'),
+    '-except beats -also'
 );
