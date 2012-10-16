@@ -158,7 +158,7 @@ should not be called as methods.)
  package Foo;
  use namespace::sweep -also => '_helper';         # sweep single sub
  use namespace::sweep -also => [qw/foo bar baz/]; # list of subs
- use namespace::sweep -also => qr/^secret_/;      # subs matching re
+ use namespace::sweep -also => qr/^secret_/;      # matching regex
 
 You can also specify a subroutine reference which will receive the symbol name as
 C<$_>. If the sub returns true, the symbol will be swept.
@@ -168,7 +168,11 @@ C<$_>. If the sub returns true, the symbol will be swept.
 
 You can also combine these methods into an array reference:
 
- use namespace::sweep -also => [ 'string', sub { 1 if /$pat/ and $_ !~ /$other/ }, qr/^foo_.+/ ];
+ use namespace::sweep -also => [
+     'string',
+     sub { 1 if /$pat/ and $_ !~ /$other/ },
+     qr/^foo_.+/,
+ ];
 
 =item -except
 
