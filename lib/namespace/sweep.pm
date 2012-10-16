@@ -20,31 +20,36 @@ sub import {
     my ( $class, %args ) = @_;
 
     my $cleanee = exists $args{-cleanee} ? $args{-cleanee} : scalar caller;
-    my @alsos;
+    my %run_test = (
+        -also   => sub { +return },
+        -except => sub { +return },
+    );
 
-    if ( exists $args{-also} ) { 
-        if ( ref $args{-also} && ( reftype $args{-also} eq reftype [ ] ) ) { 
-            @alsos = @{ $args{-also} };
-        } else { 
-            @alsos = ( $args{-also} );
+    foreach my $t (keys %run_test)
+    {
+        next unless exists $args{$t};
+        
+        unless ( ref $args{$t} and reftype($args{$t}) eq reftype([]) )
+        {
+            $args{$t} = [ $args{$t} ];
         }
-    }
-    
-    my @also_tests;
-    foreach my $also( @alsos ) { 
-        my $test = !$also                           ? sub { 0 }
-                 : !ref( $also )                    ? sub { $_[0] eq $also }
-                 : reftype $also eq reftype sub { } ? sub { local $_ = $_[0]; $also->() }
-                 : reftype $also eq reftype qr//    ? sub { $_[0] =~ $also }
-                 : croak sprintf q{Don't know what to do with [%s] for -also}, $also;
+        
+        my @tests;
+        foreach my $arg (@{ $args{$t} }) { 
+            my $test = !$arg                           ? sub { 0 }
+                     : !ref( $arg )                    ? sub { $_[0] eq $arg }
+                     : reftype $arg eq reftype sub { } ? sub { local $_ = $_[0]; $arg->() }
+                     : reftype $arg eq reftype qr//    ? sub { $_[0] =~ $arg }
+                     : croak sprintf q{Don't know what to do with [%s] for %s}, $arg, $t;
 
-        push @also_tests, $test;
+            push @tests, $test;
+        }
+        
+        $run_test{$t} = sub { 
+            return 1 if first { $_->( $_[0] ) } @tests;
+            return;
+        };
     }
-
-    my $run_test = sub { 
-        return 1 if first { $_->( $_[0] ) } @also_tests;
-        return;
-    };
 
     on_scope_end { 
         no strict 'refs';
@@ -79,7 +84,8 @@ sub import {
         }
 
         foreach my $sym( keys %{ $st } ) { 
-            $sweep->( $sym ) and next if $run_test->( $sym );
+            next if $run_test{-except}->( $sym );
+            $sweep->( $sym ) and next if $run_test{-also}->( $sym );
 
             next unless exists &{ $st . $sym };
             next if $keep{$sym};
@@ -163,6 +169,20 @@ C<$_>. If the sub returns true, the symbol will be swept.
 You can also combine these methods into an array reference:
 
     use namespace::sweep -also => [ 'string', sub { 1 if /$pat/ and $_ !~ /$other/ }, qr/^foo_.+/ ];
+
+=item -except
+
+This lets you specify subroutines which should be kept despite eveything else.
+For example, if you use L<Exporter> or L<Sub::Exporter>, you probably want to
+keep the C<import> method installed into your package:
+
+    package Foo;
+    use Exporter 'import';
+    use namespace::sweep -except => 'import';
+
+If using sub attributes, then you may need to keep certain special subs:
+
+    use namespace::sweep -except => qr{^(FETCH|MODIFY)_\w+_ATTRIBUTES$};
 
 =back
 
