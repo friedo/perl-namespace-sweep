@@ -20,31 +20,36 @@ sub import {
     my ( $class, %args ) = @_;
 
     my $cleanee = exists $args{-cleanee} ? $args{-cleanee} : scalar caller;
-    my @alsos;
+    my %run_test = (
+        -also   => sub { +return },
+        -except => sub { +return },
+    );
 
-    if ( exists $args{-also} ) { 
-        if ( ref $args{-also} && ( reftype $args{-also} eq reftype [ ] ) ) { 
-            @alsos = @{ $args{-also} };
-        } else { 
-            @alsos = ( $args{-also} );
+    foreach my $t (keys %run_test)
+    {
+        next unless exists $args{$t};
+        
+        unless ( ref $args{$t} and reftype($args{$t}) eq reftype([]) )
+        {
+            $args{$t} = [ $args{$t} ];
         }
-    }
-    
-    my @also_tests;
-    foreach my $also( @alsos ) { 
-        my $test = !$also                           ? sub { 0 }
-                 : !ref( $also )                    ? sub { $_[0] eq $also }
-                 : reftype $also eq reftype sub { } ? sub { local $_ = $_[0]; $also->() }
-                 : reftype $also eq reftype qr//    ? sub { $_[0] =~ $also }
-                 : croak sprintf q{Don't know what to do with [%s] for -also}, $also;
+        
+        my @tests;
+        foreach my $arg (@{ $args{$t} }) { 
+            my $test = !$arg                           ? sub { 0 }
+                     : !ref( $arg )                    ? sub { $_[0] eq $arg }
+                     : reftype $arg eq reftype sub { } ? sub { local $_ = $_[0]; $arg->() }
+                     : reftype $arg eq reftype qr//    ? sub { $_[0] =~ $arg }
+                     : croak sprintf q{Don't know what to do with [%s] for %s}, $arg, $t;
 
-        push @also_tests, $test;
+            push @tests, $test;
+        }
+        
+        $run_test{$t} = sub { 
+            return 1 if first { $_->( $_[0] ) } @tests;
+            return;
+        };
     }
-
-    my $run_test = sub { 
-        return 1 if first { $_->( $_[0] ) } @also_tests;
-        return;
-    };
 
     on_scope_end { 
         no strict 'refs';
@@ -79,7 +84,8 @@ sub import {
         }
 
         foreach my $sym( keys %{ $st } ) { 
-            $sweep->( $sym ) and next if $run_test->( $sym );
+            next if $run_test{-except}->( $sym );
+            $sweep->( $sym ) and next if $run_test{-also}->( $sym );
 
             next unless exists &{ $st . $sym };
             next if $keep{$sym};
@@ -105,20 +111,20 @@ __END__
 
 =head1 SYNOPSIS
 
-    package Foo;
-
-    use namespace::sweep;
-    use Some::Module qw(some_function);
-
-    sub my_method { 
-         my $foo = some_function();
-         ...
-    }
-
-    package main;
-
-    Foo->my_method;      # ok
-    Foo->some_function;  # ERROR!
+ package Foo;
+ 
+ use namespace::sweep;
+ use Some::Module qw(some_function);
+ 
+ sub my_method { 
+      my $foo = some_function();
+      ...
+ }
+ 
+ package main;
+ 
+ Foo->my_method;      # ok
+ Foo->some_function;  # ERROR!
 
 =head1 DESCRIPTION
 
@@ -140,8 +146,8 @@ The following arguments may be passed on the C<use> line:
 If you want to clean a different class than the one importing this pragma, you can 
 specify it with this flag. Otherwise, the importing class is assumed.
 
-    package Foo;
-    use namespace::sweep -cleanee => 'Bar'   # sweep up Bar.pm
+ package Foo;
+ use namespace::sweep -cleanee => 'Bar'   # sweep up Bar.pm
 
 =item -also
 
@@ -149,20 +155,40 @@ This lets you provide a mechanism to specify other subs to sweep up that would n
 normally be caught. (For example, private helper subs in your module's class that
 should not be called as methods.)
 
-    package Foo;
-    use namespace::sweep -also => '_helper';          # sweep up single sub
-    use namespace::sweep -also => [qw/foo bar baz/];  # list of subs
-    use namespace::sweep -also => qr/^secret_/;       # subs matching regex
+ package Foo;
+ use namespace::sweep -also => '_helper';         # sweep single sub
+ use namespace::sweep -also => [qw/foo bar baz/]; # list of subs
+ use namespace::sweep -also => qr/^secret_/;      # matching regex
 
 You can also specify a subroutine reference which will receive the symbol name as
 C<$_>. If the sub returns true, the symbol will be swept.
 
-    # sweep up those rude four-letter subs
-    use namespace::sweep -also => sub { return 1 if length $_ == 4 }
+ # sweep up those rude four-letter subs
+ use namespace::sweep -also => sub { return 1 if length $_ == 4 }
 
 You can also combine these methods into an array reference:
 
-    use namespace::sweep -also => [ 'string', sub { 1 if /$pat/ and $_ !~ /$other/ }, qr/^foo_.+/ ];
+ use namespace::sweep -also => [
+     'string',
+     sub { 1 if /$pat/ and $_ !~ /$other/ },
+     qr/^foo_.+/,
+ ];
+
+=item -except
+
+This lets you specify subroutines which should be kept despite eveything else.
+For example, if you use L<Exporter> or L<Sub::Exporter>, you probably want to
+keep the C<import> method installed into your package:
+
+ package Foo;
+ use Exporter 'import';
+ use namespace::sweep -except => 'import';
+
+If using sub attributes, then you may need to keep certain special subs:
+
+ use namespace::sweep -except => qr{^(FETCH|MODIFY)_\w+_ATTRIBUTES$};
+
+When a sub matches both C<< -also >> and C<< -except >>, then C<< -except >> "wins".
 
 =back
 
